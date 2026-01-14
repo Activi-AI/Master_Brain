@@ -25,7 +25,17 @@ SECRET_PATTERNS = [
     r"API_KEY\s*=",
     r"sk-[a-zA-Z0-9]{20,}",
     r"ghp_[a-zA-Z0-9]{36,}",
+    r"gho_[a-zA-Z0-9]{36,}",
+    r"glpat-[a-zA-Z0-9]{20,}",
     r"-----BEGIN [A-Z]+ PRIVATE KEY-----",
+    r"password\s*[:=]",
+    r"secret\s*[:=]",
+]
+
+RUN_REPORT_SCHEMA_PATH = Path("schemas/RUN_REPORT_SCHEMA.json")
+RUN_REPORT_REQUIRED_FIELDS = [
+    "run_id", "agent", "timestamp", "summary", "decisions",
+    "open_questions", "risks", "changes", "next_actions", "refs", "redactions_done"
 ]
 
 VENDOR_NAMES = ["openai", "anthropic", "sipgate"]
@@ -158,6 +168,38 @@ def check_secrets(staged_files):
     return errors
 
 
+def check_run_reports(staged_files):
+    """Validate run report JSON files against schema."""
+    errors = []
+
+    for filepath in staged_files:
+        if not filepath.startswith("runs/") or not filepath.endswith(".json"):
+            continue
+
+        content = read_file_content(filepath)
+        if content is None:
+            continue
+
+        try:
+            import json
+            data = json.loads(content)
+        except json.JSONDecodeError as e:
+            errors.append(f"  {filepath}: Invalid JSON - {e}")
+            continue
+
+        # Check required fields
+        missing = [k for k in RUN_REPORT_REQUIRED_FIELDS if k not in data]
+        if missing:
+            errors.append(f"  {filepath}: Missing required fields: {', '.join(missing)}")
+            continue
+
+        # Check redactions_done is true
+        if not data.get("redactions_done", False):
+            errors.append(f"  {filepath}: redactions_done must be true")
+
+    return errors
+
+
 def check_vendor_mixing(staged_files):
     """Check for vendor mixing and conflict markers, log warnings."""
     warnings = []
@@ -239,8 +281,19 @@ def main():
     else:
         print("  PASSED")
 
-    # C) Vendor mixing / conflict markers (WARNING only)
-    print("\n[C] Vendor Mixing / Conflict Markers...")
+    # C) Run Report Validation (BLOCKING)
+    print("\n[C] Run Report Validation...")
+    run_errors = check_run_reports(staged_files)
+    if run_errors:
+        print("  FAILED - Invalid run reports:")
+        for e in run_errors:
+            print(e)
+        exit_code = 1
+    else:
+        print("  PASSED")
+
+    # D) Vendor mixing / conflict markers (WARNING only)
+    print("\n[D] Vendor Mixing / Conflict Markers...")
     mix_warnings = check_vendor_mixing(staged_files)
     if mix_warnings:
         print("  WARNINGS logged to ops/OPEN_QUESTIONS.md:")
