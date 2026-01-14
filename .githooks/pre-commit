@@ -1,0 +1,10 @@
+#!/bin/bash
+# Pre-commit hook: runs quality gate checks
+
+set -e
+
+# Get repo root
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+# Run quality gate
+python3 "$REPO_ROOT/scripts/quality_gate.py"

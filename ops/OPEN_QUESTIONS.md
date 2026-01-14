@@ -1,3 +1,6 @@
-# Open Questions
+# OPEN QUESTIONS
 
-- None recorded yet
+This file tracks conflicts, verification needs, and open items.
+
+---
+
