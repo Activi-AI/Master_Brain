@@ -1,0 +1,17 @@
+# Default owners for everything
+* @dsactivi-2
+
+# Policies require review
+/policies/ @dsactivi-2
+/ops/POLICY.md @dsactivi-2
+/ops/RUNBOOK_SUPERVISOR.md @dsactivi-2
+
+# Schemas require review
+/schemas/ @dsactivi-2
+
+# Agent flows require review
+/agents/ @dsactivi-2
+
+# Scripts/CI require review
+/scripts/ @dsactivi-2
+/.github/ @dsactivi-2

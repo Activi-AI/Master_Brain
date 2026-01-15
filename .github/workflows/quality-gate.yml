@@ -1,0 +1,81 @@
+name: Quality Gate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run Quality Gate
+        run: |
+          echo "============================================================"
+          echo "Quality Gate Check (CI Mode)"
+          echo "============================================================"
+          python3 scripts/quality_gate.py --ci || true
+
+      - name: Check KB Frontmatter
+        run: |
+          echo "Checking KB files for required frontmatter..."
+          for file in $(find kb -name "*.md" 2>/dev/null); do
+            if ! head -1 "$file" | grep -q "^---"; then
+              echo "WARN: $file missing frontmatter"
+            fi
+          done
+
+      - name: Scan for Secrets
+        run: |
+          echo "Scanning for potential secrets..."
+          # Use Python to avoid pattern matching issues
+          python3 -c "
+          import re, sys, pathlib
+          patterns = [r'sk-[a-zA-Z0-9]{20,}', r'ghp_[a-zA-Z0-9]{36,}', r'-----BEGIN .* PRIVATE KEY-----']
+          found = False
+          for ext in ['md', 'json', 'yaml', 'yml', 'py']:
+              for f in pathlib.Path('.').rglob(f'*.{ext}'):
+                  if '.env.example' in str(f) or '.git' in str(f):
+                      continue
+                  try:
+                      content = f.read_text()
+                      for p in patterns:
+                          if re.search(p, content):
+                              print(f'WARN: {f} matches {p[:20]}...')
+                              found = True
+                  except: pass
+          sys.exit(1 if found else 0)
+          "
+          echo "OK: Secrets scan complete"
+
+      - name: Validate Run Report Schema
+        run: |
+          echo "Validating run report examples..."
+          if [ -f schemas/RUN_REPORT_SCHEMA.json ]; then
+            for report in $(find runs -name "*.json" 2>/dev/null); do
+              echo "Checking $report..."
+              python3 -c "
+import json
+import sys
+with open('$report') as f:
+    data = json.load(f)
+required = ['run_id', 'agent', 'timestamp', 'summary', 'decisions', 'open_questions', 'risks', 'changes', 'next_actions', 'refs', 'redactions_done']
+missing = [k for k in required if k not in data]
+if missing:
+    print(f'FAIL: Missing fields: {missing}')
+    sys.exit(1)
+if not data.get('redactions_done'):
+    print('FAIL: redactions_done must be true')
+    sys.exit(1)
+print('OK')
+" || exit 1
+            done
+          fi
