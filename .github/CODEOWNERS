@@ -1,10 +1,15 @@
-# Default owners for everything
+# CODEOWNERS for Master_Brain
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything
 * @dsactivi-2
+
+# TODO: Add team when created in Activi-AI org
+# * @Activi-AI/release-approvers
 
 # Policies require review
 /policies/ @dsactivi-2
-/ops/POLICY.md @dsactivi-2
-/ops/RUNBOOK_SUPERVISOR.md @dsactivi-2
+/ops/ @dsactivi-2
 
 # Schemas require review
 /schemas/ @dsactivi-2

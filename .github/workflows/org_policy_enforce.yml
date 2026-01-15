@@ -1,0 +1,84 @@
+# Org Policy Enforcement Workflow
+# Prüft alle PRs gegen organisationsweite Standards
+
+name: org-policy-enforce
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  structure:
+    name: "ci:structure"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check Repository Structure
+        run: python scripts/ci/check_structure.py
+
+  brief:
+    name: "ci:brief"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check PROJECT_BRIEF
+        run: python scripts/ci/check_project_brief.py
+
+  capabilities:
+    name: "ci:capabilities"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Check Capabilities
+        run: python scripts/ci/check_capabilities.py
+
+  testplan:
+    name: "ci:testplan"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Check Test Plan
+        run: python scripts/ci/check_test_plan.py
+
+  # Gate Job - fails if any check fails
+  gate:
+    name: "ci:gate"
+    needs: [structure, brief, capabilities, testplan]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checks passed
+        run: |
+          echo "✅ All policy checks passed"
+          echo "CLASS=SAFE"
