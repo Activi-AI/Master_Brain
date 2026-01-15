@@ -62,20 +62,20 @@ jobs:
           if [ -f schemas/RUN_REPORT_SCHEMA.json ]; then
             for report in $(find runs -name "*.json" 2>/dev/null); do
               echo "Checking $report..."
-              python3 -c "
-import json
-import sys
-with open('$report') as f:
-    data = json.load(f)
-required = ['run_id', 'agent', 'timestamp', 'summary', 'decisions', 'open_questions', 'risks', 'changes', 'next_actions', 'refs', 'redactions_done']
-missing = [k for k in required if k not in data]
-if missing:
-    print(f'FAIL: Missing fields: {missing}')
-    sys.exit(1)
-if not data.get('redactions_done'):
-    print('FAIL: redactions_done must be true')
-    sys.exit(1)
-print('OK')
-" || exit 1
+              python3 << PYEOF
+          import json, sys
+          with open('$report') as f:
+              data = json.load(f)
+          required = ['run_id', 'agent', 'timestamp', 'summary', 'decisions', 'open_questions', 'risks', 'changes', 'next_actions', 'refs', 'redactions_done']
+          missing = [k for k in required if k not in data]
+          if missing:
+              print(f'FAIL: Missing fields: {missing}')
+              sys.exit(1)
+          if not data.get('redactions_done'):
+              print('FAIL: redactions_done must be true')
+              sys.exit(1)
+          print('OK')
+          PYEOF
+              if [ $? -ne 0 ]; then exit 1; fi
             done
           fi
