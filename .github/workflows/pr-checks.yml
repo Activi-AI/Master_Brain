@@ -1,0 +1,13 @@
+name: PR Quality Checks
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PROJECT_BRIEF
+        run: ./scripts/ci/check_project_brief.sh
+      - name: Check capabilities
+        run: ./scripts/ci/check_capabilities.sh
