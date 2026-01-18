@@ -39,3 +39,53 @@ logs/
 # Coverage
 coverage/
 .nyc_output/
+# ═══════════════════════════════════════════════════════════════
+# ENVIRONMENT & SECRETS
+.env.*.local
+credentials.json
+secrets.json
+# DEPENDENCIES
+vendor/
+.pnp/
+.pnp.js
+# BUILD OUTPUT
+.nuxt/
+.output/
+*.tsbuildinfo
+# CACHE
+.cache/
+.parcel-cache/
+.turbo/
+*.cache
+# LOGS
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+# TESTING
+test-results/
+playwright-report/
+# IDE & EDITOR
+*~
+.project
+.settings/
+# OS
+Thumbs.db
+desktop.ini
+# PYTHON (falls verwendet)
+*.py[cod]
+*$py.class
+.Python
+.venv/
+pip-log.txt
+.mypy_cache/
+.pytest_cache/
+# DATABASE
+*.sqlite
+*.sqlite3
+*.db
+# MISC
+.tmp/
+temp/
+*.bak
+*.backup
