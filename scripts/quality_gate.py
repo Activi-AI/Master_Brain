@@ -6,6 +6,7 @@ Quality Gate for KB Documents
 - Logs conflicts/mixed vendors to ops/OPEN_QUESTIONS.md
 """
 
+import json
 import os
 import re
 import sys
@@ -20,16 +21,20 @@ from pathlib import Path
 REQUIRED_FRONTMATTER_KEYS = ["vendor", "topic", "doc_type", "last_verified", "source_url", "tags"]
 
 SECRET_PATTERNS = [
-    r"OPENAI_API_KEY\s*=",
-    r"ANTHROPIC_API_KEY\s*=",
-    r"API_KEY\s*=",
+    # API Keys with actual values (not just mentions)
+    r"OPENAI_API_KEY\s*=\s*['\"]?sk-[a-zA-Z0-9]",
+    r"ANTHROPIC_API_KEY\s*=\s*['\"]?sk-[a-zA-Z0-9]",
+    r"API_KEY\s*=\s*['\"]?[a-zA-Z0-9_-]{20,}",
+    # Token patterns (actual tokens, not variable names)
     r"sk-[a-zA-Z0-9]{20,}",
     r"ghp_[a-zA-Z0-9]{36,}",
     r"gho_[a-zA-Z0-9]{36,}",
     r"glpat-[a-zA-Z0-9]{20,}",
+    # Private keys
     r"-----BEGIN [A-Z]+ PRIVATE KEY-----",
-    r"password\s*[:=]",
-    r"secret\s*[:=]",
+    # Passwords/secrets with actual values (min 8 chars, in quotes)
+    r'password\s*[:=]\s*["\'][^"\']{8,}["\']',
+    r'secret\s*[:=]\s*["\'][^"\']{8,}["\']',
 ]
 
 RUN_REPORT_SCHEMA_PATH = Path("schemas/RUN_REPORT_SCHEMA.json")
@@ -181,7 +186,6 @@ def check_run_reports(staged_files):
             continue
 
         try:
-            import json
             data = json.loads(content)
         except json.JSONDecodeError as e:
             errors.append(f"  {filepath}: Invalid JSON - {e}")
