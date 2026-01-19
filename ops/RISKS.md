@@ -1,3 +1,0 @@
-# Risks
-
-- None recorded yet
