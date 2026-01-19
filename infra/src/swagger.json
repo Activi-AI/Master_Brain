@@ -1,0 +1,442 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Brain Memory API",
+    "description": "Persistent Memory API for Master-Brain Supervisor. Stores decisions, learnings, policies, and other knowledge entries.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Denis Selmanovic",
+      "email": "denis@activi.io"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local development"
+    },
+    {
+      "url": "https://brain.activi.io",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health Check",
+        "description": "Check API and database health status",
+        "tags": ["System"],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Service is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Service unhealthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/append": {
+      "post": {
+        "summary": "Append Memory Entry",
+        "description": "Store a new memory entry (decision, learning, policy, etc.)",
+        "tags": ["Memory"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemoryInput"
+              },
+              "example": {
+                "type": "decision",
+                "content": "Use PostgreSQL for persistent storage due to ACID compliance",
+                "tags": ["architecture", "database"],
+                "refs": ["docs/ADR-001.md"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Memory entry created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MemoryEntry"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/recent": {
+      "get": {
+        "summary": "Get Recent Entries",
+        "description": "Retrieve the most recent memory entries",
+        "tags": ["Memory"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of entries to return (1-100)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "description": "Filter by entry type",
+            "schema": {
+              "$ref": "#/components/schemas/MemoryType"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of memory entries",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/search": {
+      "get": {
+        "summary": "Search Memory",
+        "description": "Search memory entries by tag or text content",
+        "tags": ["Memory"],
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "description": "Filter by tag (exact match)",
+            "schema": {
+              "type": "string",
+              "maxLength": 255
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Search text in content (case-insensitive)",
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of entries to return (1-100)",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Search results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MemoryEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/memory/stats": {
+      "get": {
+        "summary": "Get Statistics",
+        "description": "Get memory statistics grouped by type",
+        "tags": ["Memory"],
+        "responses": {
+          "200": {
+            "description": "Memory statistics",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "API Token authentication"
+      }
+    },
+    "schemas": {
+      "MemoryType": {
+        "type": "string",
+        "enum": ["policy", "decision", "learning", "code", "error", "fix", "note", "task"],
+        "description": "Type of memory entry"
+      },
+      "MemoryInput": {
+        "type": "object",
+        "required": ["type", "content"],
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50000,
+            "description": "The actual content/knowledge to store"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "maxItems": 20,
+            "default": [],
+            "description": "Tags for categorization and search"
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 255
+            },
+            "maxItems": 20,
+            "default": [],
+            "description": "References to related files or resources"
+          }
+        }
+      },
+      "MemoryEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier"
+          },
+          "type": {
+            "$ref": "#/components/schemas/MemoryType"
+          },
+          "content": {
+            "type": "string",
+            "description": "The stored content"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Associated tags"
+          },
+          "refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Associated references"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Creation timestamp"
+          }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["ok", "error"]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "version": {
+            "type": "string"
+          },
+          "db": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": ["connected", "disconnected"]
+              },
+              "latency_ms": {
+                "type": "integer"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "StatsResponse": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Total number of memory entries"
+          },
+          "by_type": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "last_entry": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Error message"
+          }
+        }
+      }
+    }
+  }
+}
